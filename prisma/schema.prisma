@@ -1,0 +1,69 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Student profile linked to wallet address
+model Student {
+  id            String     @id @default(cuid())
+  walletAddress String     @unique @db.VarChar(42)
+  name          String?    @db.VarChar(100)
+  hostelBlock   String?    @db.VarChar(20)
+  roomNumber    String?    @db.VarChar(10)
+  avatarUrl     String?    @db.VarChar(255)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  redemptions Redemption[]
+  mintEvents  MintEvent[]
+  
+  @@map("students")
+}
+
+// On-chain meal redemptions (burn events)
+model Redemption {
+  id             String     @id @default(cuid())
+  txHash         String     @unique @db.VarChar(66)
+  student        Student    @relation(fields: [studentId], references: [id])
+  studentId      String
+  mealCount      Int        @default(1)
+  mealType       MealType   @default(DINNER)
+  blockNumber    BigInt
+  blockTimestamp DateTime   @db.Timestamptz(6)
+  createdAt      DateTime   @default(now())
+
+  @@index([studentId])
+  @@index([blockTimestamp])
+  @@map("redemptions")
+}
+
+// Admin token minting events
+model MintEvent {
+  id             String     @id @default(cuid())
+  txHash         String     @unique @db.VarChar(66)
+  adminAddress   String     @db.VarChar(42)
+  student        Student    @relation(fields: [studentId], references: [id])
+  studentId      String
+  amount         Int
+  blockNumber    BigInt
+  blockTimestamp DateTime   @db.Timestamptz(6)
+  createdAt      DateTime   @default(now())
+
+  @@index([studentId])
+  @@index([adminAddress])
+  @@map("mint_events")
+}
+
+// Meal type enum (customize as needed)
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SPECIAL_MEAL
+}
