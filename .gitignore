@@ -9,8 +9,13 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+
+# Hardhat
 /cache
 /artifacts
+cache/
+artifacts/
+typechain-types/
 
 # testing
 /coverage
