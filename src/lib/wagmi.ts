@@ -24,6 +24,6 @@ export const config = getDefaultConfig({
 
 export const polygonChain = polygon // Mainnet
 export const mumbaiChain = polygonMumbai // Testnet (deprecated)
-export const amoyChain = polygonAmoy // New testnet
-export const localhostChain = hardhat // Local development
+export const amoyChai = polygonAmoy // New testnet
+export const nlocalhostChain = hardhat // Local development
 

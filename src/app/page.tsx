@@ -12,6 +12,9 @@ import RedemptionPanel from '@/components/dashboard/RedemptionPanel';
 import ProfileForm from '@/components/profile/ProfileForm';
 import Onboarding from '@/components/profile/Onboarding';
 import TokenBalance from '@/components/tokens/TokenBalance';
+import AdminPanel from '@/components/admin/AdminPanel';
+import AdminDashboard from '@/components/admin/AdminDashboard';
+import { useContractRead } from 'wagmi';
 
 // Mock data for demonstration
 const mockStudent = {
@@ -70,6 +73,18 @@ const mockStats = {
 
 export default function Home() {
   const { isConnected, address } = useAccount();
+  const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_MESS_TOKEN_ADDRESS;
+  const contractAddressTyped = CONTRACT_ADDRESS && CONTRACT_ADDRESS.startsWith('0x')
+    ? CONTRACT_ADDRESS as `0x${string}`
+    : undefined;
+  const { data: owner } = useContractRead({
+    address: contractAddressTyped,
+    abi: require('@/lib/abi').MESS_TOKEN_ABI,
+    functionName: 'owner',
+  });
+  const isAdmin = typeof owner === 'string' && typeof address === 'string'
+    ? owner.toLowerCase() === address.toLowerCase()
+    : false;
   const [student, setStudent] = useState(mockStudent);
   const [redemptions, setRedemptions] = useState(mockRedemptions);
   const [stats, setStats] = useState(mockStats);
@@ -86,6 +101,14 @@ export default function Home() {
   useEffect(() => {
     const checkUserProfile = async () => {
       if (!address) return;
+      
+      // Skip profile check for admin - they don't need student profiles
+      if (isAdmin) {
+        setIsOnboarding(false);
+        setHasProfile(true);
+        setIsLoading(false);
+        return;
+      }
       
       setIsLoading(true);
       try {
@@ -151,6 +174,11 @@ export default function Home() {
         </div>
       </div>
     );
+  }
+
+  // Show admin dashboard if user is admin
+  if (isConnected && isAdmin) {
+    return <AdminDashboard />;
   }
 
   const handleRedeem = async (mealCount: number, mealType: string) => {
@@ -236,14 +264,44 @@ export default function Home() {
     }
   };
 
-  // Show onboarding for new users
-  if (isOnboarding) {
+  // Show onboarding for new users (but not for admin)
+  if (isOnboarding && !isAdmin) {
     return (
       <Onboarding
         student={connectedStudent}
         onComplete={handleProfileSave}
         isLoading={isLoading}
       />
+    );
+  }
+
+  // Admin Dashboard - Special interface for contract owner
+  if (isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-white font-bold text-3xl">👑</span>
+            </div>
+            <h1 className="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
+            <p className="text-blue-200">Hostel Mess Token Management System</p>
+            <div className="text-sm text-blue-300 mt-2">
+              Connected as: <span className="font-mono text-yellow-300">{address}</span>
+            </div>
+          </div>
+          
+          <div className="max-w-2xl mx-auto">
+            <AdminPanel />
+          </div>
+          
+          <div className="text-center mt-8">
+            <div className="text-blue-200 text-sm">
+              ⚡ Powered by Polygon Amoy Testnet
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
